@@ -1,32 +1,63 @@
+int tar;
+
 class Solution {
 public:
-    bool dfs(vector<int>& matchsticks, vector<int>& kow, int index, int target){
-        if(index == -1){
+    void tryForm(int idx, vector<int>& mat, int sum, vector<int>& row, int mask, int pre) {
+        if (sum == tar) {
+            row.push_back(mask);
+            return;
+        }
+        
+        if (sum > tar or idx == -1) {
+            return;
+        }
+        
+        if ((mask & (1<<idx)) > 0 or mat[idx] == pre) {
+            tryForm(idx-1, mat, sum, row, mask, pre);
+        } else {
+            int nextMask = (mask | (1<<idx));
+            tryForm(idx-1, mat, sum + mat[idx], row, nextMask, pre);
+            tryForm(idx-1, mat, sum, row, mask, mat[idx]);
+        }
+    }
+    
+    bool dfs(int pos, int mask, vector<int>& mat) {
+        if (pos == 3) {
             return true;
         }
-        for(int i = 0; i < 4; i++){
-            if(((kow[i] + matchsticks[index]) > target) or (i > 0 and kow[i] == kow[i - 1])){
-                continue;
+        
+        vector<int> v;
+        int sum = 0, idx = 0, nextMask = mask;
+        for (int i = mat.size()-1; i >=0; i--) {
+            if ((mask & (1<<i)) == 0) {
+                sum += mat[i];
+                idx = i-1;
+                nextMask |= (1<<i);
+                break;
             }
-            kow[i] += matchsticks[index];
-            if(dfs(matchsticks, kow, index - 1, target)){
-                return true;
-            } 
-            kow[i] -= matchsticks[index];
         }
+        
+        tryForm(idx, mat, sum, v, nextMask, -1);
+        int res = false;
+
+        for (int i = 0; i < v.size(); i++) {
+            res = (res or dfs(pos+1, v[i], mat));
+            if (res) return true;
+        }
+    
         return false;
     }
     
-    bool makesquare(vector<int>& matchsticks) {
+    
+    bool makesquare(vector<int>& mat) {
+        int n =  mat.size();
+        if (n < 4) return false;
+        sort(mat.begin(), mat.end());
         int sum = 0;
-        for(int i : matchsticks){
-            sum += i;
-        }
-        if(sum%4 != 0 or matchsticks.size() < 3){
-            return false;
-        }
-        sort(matchsticks.begin(), matchsticks.end());
-        vector<int> kow(4, 0);
-        return dfs(matchsticks, kow, matchsticks.size() - 1, sum/4);
+        for (auto& m : mat) sum += m;
+        if (sum % 4 != 0) return false;
+        tar = sum / 4;
+
+        return dfs(0, 0, mat);
     }
 };
